@@ -1,0 +1,22 @@
+server:
+  port: ${PORT:8761}
+
+spring:
+  application:
+    name: discovery-service
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    wait-time-in-ms-when-sync-empty: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, gateway, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
