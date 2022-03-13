@@ -4,7 +4,7 @@
 1. Discovery Server - Eureka
 2. API gateway: with token relay (auth server needed)
 3. Greetings Service: (non)secured demo endpoint, multi-instance
-4. Quiz Service: service for creating Questions, QuiTemplates and running Quiz, requires MongoDB and Auth Server
+4. Quiz Service: service for creating Questions, QuizTemplates and running Quiz, requires MongoDB and Auth Server
 
 ### Needs to be done in the future ( but not required ):
 1. add Lombok
