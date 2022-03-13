@@ -17,4 +17,4 @@ and it obtains addresses from discovery-service.
 
 A simple service which registers itself with discovery-service.  
 Run multiple instances on different ports.
-It is used by gateway and caller-sevice.
+It is used by gateway and caller-service.

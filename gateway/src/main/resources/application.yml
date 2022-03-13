@@ -4,22 +4,53 @@ server:
 spring:
   application:
     name: gateway
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_SERVER:http://localhost:9090/auth/realms/platform}
+
   cloud:
     gateway:
       discovery:
         locator:
           lower-case-service-id: true
       routes:
-        - id: message-source
-          uri: lb://greetings-service
+        - id: simple-greetings
           predicates:
-          - Path=/greetings
+          - Path=/resources/greetings
           filters:
+          - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
+          - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
           - name: CircuitBreaker
             args:
               name: fallbackCommand
               fallbackUri: forward:/fallback/message
+          uri: lb://greetings-service
 
+        - id: echo-message
+          predicates:
+            - Path=/resources/echo
+          filters:
+            - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+            - name: CircuitBreaker
+              args:
+                name: fallbackCommand
+                fallbackUri: forward:/fallback/message
+          uri: lb://greetings-service
+        - id: quiz
+          predicates:
+            - Path=/quiz/**
+          filters:
+            - RewriteLocationResponseHeader=AS_IN_REQUEST, Location, ,
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+            - name: CircuitBreaker
+              args:
+                name: fallbackCommand
+                fallbackUri: forward:/fallback/message
+          uri: lb://cms
 
 eureka:
   client:
@@ -46,5 +77,5 @@ management:
 logging:
   level:
     root: error
-    org.springframework: info
+    org.springframework.web: debug
     dev.demo: debug

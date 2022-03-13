@@ -1,10 +1,12 @@
 server:
-  port: ${PORT:8082}
+  port: ${PORT:8084}
 
 spring:
   application:
-    name: greetings-service
-
+    name: cms
+  jackson:
+    serialization:
+      fail-on-self-references: false
   security:
     oauth2:
       resourceserver:
@@ -21,3 +23,4 @@ logging:
     root: info
     org.springframework.web: debug
     org.springframework.security: debug
+    ba.majid.quiz: debug
