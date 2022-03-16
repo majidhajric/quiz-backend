@@ -1,6 +1,7 @@
 package ba.majid.quiz.quiz.controller;
 
 import ba.majid.quiz.quiz.model.Quiz;
+import ba.majid.quiz.quiz.model.QuizStatistic;
 import ba.majid.quiz.quiz.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,18 +18,23 @@ public class QuizController {
 
     private final QuizService quizService;
 
-    @PostMapping(path = "/{templateId}")
-    public Mono<Quiz> startQuiz(@PathVariable String templateId) {
-        return quizService.startQuiz(templateId);
-    }
-
     @GetMapping(path = "/{quizId}")
     public Mono<Quiz> findQuiz(@PathVariable String quizId) {
         return quizService.findQuiz(quizId);
     }
 
-    @PutMapping(path = "/{quizId}/current")
-    public Mono<Quiz> answerCurrentQuestion(@PathVariable String quizId, @RequestParam List<String> answers) {
-        return quizService.answerCurrentQuestion(quizId, answers);
+    @GetMapping(path = "/{quizId}/statistic")
+    public Mono<QuizStatistic> getQuizStatistic(@PathVariable String quizId) {
+        return quizService.getQuizStatistic(quizId);
+    }
+
+    @PostMapping(path = "/{quizId}/start")
+    public Mono<Quiz> startQuiz(@PathVariable String quizId) {
+        return quizService.startQuiz(quizId);
+    }
+
+    @PutMapping(path = "/{quizId}/answer-current")
+    public Mono<Quiz> answerQuestion(@PathVariable String quizId, @RequestParam List<String> answers) {
+        return quizService.answerQuestion(quizId, answers);
     }
 }

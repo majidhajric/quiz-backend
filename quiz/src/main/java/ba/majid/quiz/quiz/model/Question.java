@@ -10,7 +10,7 @@ import java.util.Set;
 @Getter
 @ToString
 @EqualsAndHashCode(callSuper = true)
-public abstract class Question extends AbstractDocument implements Content {
+public abstract class Question extends AbstractDocument {
 
     private String text;
 

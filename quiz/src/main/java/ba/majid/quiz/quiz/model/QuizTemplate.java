@@ -2,25 +2,26 @@ package ba.majid.quiz.quiz.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.util.Assert;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@ToString
 @EqualsAndHashCode(callSuper = true)
-@Document
+@Document(collection = "documents")
+@TypeAlias("QuizTemplate")
 public class QuizTemplate extends AbstractDocument {
-
-    private static final float DEFAULT_THRESHOLD = 80.0F;
-
-    @JsonIgnore
-    private boolean showQuestions;
 
     private String name;
 
@@ -28,19 +29,9 @@ public class QuizTemplate extends AbstractDocument {
 
     private int duration;
 
-    private Set<Question> questions;
+    private Set<Question> questions = new LinkedHashSet<>();
 
     private float threshold;
-
-    private QuizTemplate() {}
-
-    public QuizTemplate(String name, String description, int duration, Question...questions) {
-        this.name = name;
-        this.description = description;
-        this.duration = duration;
-        this.questions = new LinkedHashSet<>(Arrays.asList(questions));
-        this.threshold = DEFAULT_THRESHOLD;
-    }
 
     @JsonIgnore
     public Set<Question> getQuestions() {
@@ -65,4 +56,38 @@ public class QuizTemplate extends AbstractDocument {
         return this.questions.size();
     }
 
+    private QuizTemplate() {}
+
+    public static class Builder {
+        private static final int DEFAULT_THRESHOLD = 65;
+        private final QuizTemplate template = new QuizTemplate();
+        {
+            template.threshold = DEFAULT_THRESHOLD;
+        }
+        public Builder withName(String name) {
+            Assert.notNull(name);
+            template.setName(name);
+            return this;
+        }
+
+        public Builder withDescription(String description) {
+            Assert.notNull(description);
+            template.setDescription(description);
+            return this;
+        }
+
+        public Builder withDuration(int duration) {
+            template.setDuration(duration);
+            return this;
+        }
+
+        public Builder withQuestions(Set<Question> questions) {
+            template.questions.addAll(questions);
+            return this;
+        }
+
+        public QuizTemplate build() {
+            return template;
+        }
+    }
 }

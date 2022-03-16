@@ -8,13 +8,16 @@ import ba.majid.quiz.quiz.service.QuizService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
+@Profile("!test")
 @Component
 public class DemoRunner implements CommandLineRunner {
 
@@ -36,8 +39,17 @@ public class DemoRunner implements CommandLineRunner {
         Question question3 = questionService.saveQuestion(yesNo).block();
         Question question4 = questionService.saveQuestion(single).block();
         Question question5 = questionService.saveQuestion(multi).block();
-
-        QuizTemplate quizTemplate = new QuizTemplate("Demo Quiz", "Some long quiz description.", 45, question1, question2, question3, question3, question5);
+        assert question1 != null;
+        assert question2 != null;
+        assert question3 != null;
+        assert question4 != null;
+        assert question5 != null;
+        QuizTemplate quizTemplate = new QuizTemplate.Builder()
+                .withName("Demo")
+                .withDescription("Nice description here.")
+                .withQuestions(Set.of(question1, question2, question3, question4, question5))
+                .withDuration(45)
+                .build();
         quizService.createQuizTemplate(quizTemplate).block();
     }
 }

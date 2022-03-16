@@ -10,12 +10,9 @@ import java.util.Set;
 @Data
 public class Answer {
 
-    private Question question;
-
     private Set<String> answers;
 
-    public Answer(Question question, Collection<String> answers) {
-        this.question = question;
+    public Answer(Collection<String> answers) {
         this.answers = new LinkedHashSet<>(answers);
     }
 

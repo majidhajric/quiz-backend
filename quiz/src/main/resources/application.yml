@@ -18,9 +18,20 @@ eureka:
     service-url:
       default-zone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka}
 
+springdoc:
+  version: '@springdoc.version@'
+  swagger-ui:
+    oauth:
+      clientId: swagger-ui-quiz
+      clientSecret:
+  oAuthFlow:
+    authorizationUrl: http://localhost:9090/auth/realms/platform/protocol/openid-connect/auth
+    tokenUrl: http://localhost:9090/auth/realms/platform/protocol/openid-connect/token
+
 logging:
   level:
     root: info
-    org.springframework.web: debug
+    org.springframework: debug
     org.springframework.security: debug
     ba.majid.quiz: debug
+

@@ -1,9 +1,6 @@
 package ba.majid.quiz.quiz.service;
 
-import ba.majid.quiz.quiz.model.Question;
-import ba.majid.quiz.quiz.model.Quiz;
-import ba.majid.quiz.quiz.model.QuizTemplate;
-import ba.majid.quiz.quiz.model.ValidatedAnswer;
+import ba.majid.quiz.quiz.model.*;
 import ba.majid.quiz.quiz.repository.QuizRepository;
 import ba.majid.quiz.quiz.repository.QuizTemplateRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,21 +27,11 @@ public class QuizService {
     }
 
     public Mono<QuizTemplate> findQuizTemplate(String id) {
-        return quizTemplateRepository.findById(id)
-                .map(quizTemplate -> {
-                            quizTemplate.setShowQuestions(true);
-                            return quizTemplate;
-                        }
-                );
+        return quizTemplateRepository.findById(id);
     }
 
     public Flux<QuizTemplate> findAllQuizTemplates() {
-        return quizTemplateRepository.findAll()
-                .map(quizTemplate -> {
-                            quizTemplate.setShowQuestions(true);
-                            return quizTemplate;
-                        }
-                );
+        return quizTemplateRepository.findAll();
     }
 
     public Mono<QuizTemplate> addQuestionToQuizTemplate(String templateId, String questionId) {
@@ -54,7 +41,7 @@ public class QuizService {
                 .doOnNext(qt -> qt.addQuestion(question)));
     }
 
-    public Mono<Quiz> startQuiz(String templateId) {
+    public Mono<Quiz> createQuiz(String templateId) {
         return quizTemplateRepository.findById(templateId)
                 .switchIfEmpty(Mono.defer(() -> {
                     log.error("No template found");
@@ -64,21 +51,10 @@ public class QuizService {
                 .flatMap(quizRepository::save);
     }
 
-    public Mono<Quiz> answerCurrentQuestion(String quizId, List<String> answers) {
-        return quizRepository
-                .findById(quizId)
-                .switchIfEmpty(Mono.defer(() -> {
-                    log.error("No quiz found");
-                    return Mono.error(new RuntimeException());
-                }))
-                .flatMap(quiz -> {
-                    Question currentQuestion = quiz.getCurrentQuestion();
-                    if (currentQuestion == null) {
-                        return Mono.error(new RuntimeException("Quiz already ended."));
-                    }
-                    ValidatedAnswer validatedAnswer = quiz.answerCurrentQuestion(answers, currentQuestion.getAnswers());
-                    return quizRepository.save(quiz);
-                });
+    public Mono<Quiz> startQuiz(String quizId) {
+        return quizRepository.findById(quizId)
+                .map(Quiz::startQuiz)
+                .flatMap(quizRepository::save);
     }
 
     public Mono<Quiz> saveQuiz(Quiz quiz) {
@@ -89,12 +65,23 @@ public class QuizService {
         return quizRepository.findById(quizId);
     }
 
-    public Mono<QuizTemplate> getQuizDetails(String templateId) {
-        return quizTemplateRepository.findById(templateId)
-                .map(quizTemplate -> {
-                            quizTemplate.setShowQuestions(false);
-                            return quizTemplate;
-                        }
-                );
+    public Mono<QuizTemplate> getQuizTemplate(String templateId) {
+        return quizTemplateRepository.findById(templateId);
+    }
+
+    public Mono<QuizStatistic> getQuizStatistic(String quizId) {
+        return quizRepository.findById(quizId).map(QuizStatistic::new);
+    }
+
+    public Mono<Quiz> answerQuestion(String quizId, List<String> answers) {
+        return quizRepository.findById(quizId)
+                .switchIfEmpty(Mono.defer(() -> {
+                    log.error("No quiz found");
+                    return Mono.error(new RuntimeException());
+                }))
+                .flatMap(quiz -> {
+                    quiz.answerQuestion(answers);
+                    return quizRepository.save(quiz);
+                });
     }
 }

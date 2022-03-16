@@ -1,68 +1,86 @@
 package ba.majid.quiz.quiz.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import static ba.majid.quiz.quiz.model.QuizStatus.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Document
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Quiz extends AbstractDocument {
 
-    private QuizTemplate template;
+    private final QuizTemplate template;
 
     private Question currentQuestion;
 
     @JsonIgnore
-    private List<Question> questions;
+    private Set<Question> questions;
 
     @JsonIgnore
-    private List<ValidatedAnswer> answers;
+    private Set<AnsweredQuestion> answers;
 
     private QuizStatus status;
 
-    private Quiz() {}
-
     public Quiz(QuizTemplate template) {
         this.template = template;
-        this.questions = new LinkedList<>(template.getQuestions());
-        this.answers = new LinkedList<>();
+        this.questions = new LinkedHashSet<>(template.getQuestions());
+        this.answers = new LinkedHashSet<>();
         this.currentQuestion = null;
-        this.start();
+        this.status = QuizStatus.NOT_STARTED;
     }
 
-    public void start() {
-        shuffleQuestions();
-        this.currentQuestion = this.questions.get(0);
-        this.status = IN_PROGRESS;
+    public Quiz startQuiz() {
+        if (this.status == QuizStatus.NOT_STARTED) {
+            updateCurrentQuestion();
+            this.status = QuizStatus.IN_PROGRESS;
+        } else {
+            this.currentQuestion = null;
+            this.status = QuizStatus.NOT_STARTED;
+        }
+        return this;
+    }
+
+    private void updateCurrentQuestion() {
+        this.currentQuestion = this.questions.stream().findFirst().orElse(null);
+        if (this.currentQuestion != null) {
+            this.questions.remove(this.currentQuestion);
+        }
+    }
+
+    public Quiz answerQuestion(@NonNull Collection<String> answers) {
+        Assert.notNull(this.currentQuestion, "Current question error");
+
+        if (LocalDateTime.now().isAfter(this.getCreatedAt().plus(this.getTemplate().getDurationTime()))) {
+            this.questions.clear();
+            this.currentQuestion = null;
+            this.status = QuizStatus.TIME_OUT;
+            return this;
+        }
+
+        AnsweredQuestion answeredQuestion = new AnsweredQuestion(currentQuestion, answers);
+        this.answers.add(answeredQuestion);
+        updateCurrentQuestion();
+        if (currentQuestion == null) {
+            status = QuizStatus.ALL_ANSWERED;
+        }
+        return this;
     }
 
     @JsonProperty
     public Question getCurrentQuestion() {
         return this.currentQuestion;
-    }
-
-    public ValidatedAnswer answerCurrentQuestion(Collection<String> answers, Collection<String> correctAnswers) {
-        Assert.notNull(currentQuestion, "Current question is null");
-        this.questions.remove(currentQuestion);
-        Answer userAnswer = new Answer(currentQuestion, answers);
-        ValidatedAnswer validatedAnswer = new ValidatedAnswer(userAnswer, correctAnswers);
-        this.answers.add(validatedAnswer);
-        shuffleQuestions();
-        this.currentQuestion = this.questions.stream().findFirst().orElse(null);
-        this.updateStatus();
-        return validatedAnswer;
     }
 
     @JsonProperty
@@ -76,19 +94,13 @@ public class Quiz extends AbstractDocument {
     }
 
     @JsonProperty
-    public long getCorrectAnswersCount() {
-        return this.answers.stream().filter(ValidatedAnswer::isValid).count();
+    public int getCorrectAnswersCount() {
+        return (int) this.answers.stream().filter(AnsweredQuestion::isValid).count();
     }
 
     @JsonProperty
     public float getScore() {
         return 100.0f / getQuestionCount() * getCorrectAnswersCount();
-    }
-
-    @JsonProperty
-    public QuizStatus getStatus() {
-        updateStatus();
-        return status;
     }
 
     private boolean isTimeEnd() {
@@ -99,18 +111,30 @@ public class Quiz extends AbstractDocument {
         return this.currentQuestion == null && this.questions.size() == 0;
     }
 
-    private void updateStatus() {
-        if (status == IN_PROGRESS) {
-            if (isAllAnswered()) {
-                status = ALL_ANSWERED;
-            }
-            if (isTimeEnd()) {
-                status = TIME_OUT;
-            }
+    @JsonIgnore
+    public Set<AnsweredQuestion> getAnswers() {
+        return Collections.unmodifiableSet(answers);
+    }
+
+    @JsonIgnore
+    public Set<Question> getQuestions() {
+        return Collections.unmodifiableSet(questions);
+    }
+
+    @JsonProperty
+    public QuizState getState() {
+        switch (this.status) {
+            case NOT_STARTED:
+                return QuizState.INITIAL;
+            case IN_PROGRESS:
+                return QuizState.RUNNING;
+            case CANCELED:
+            case TIME_OUT:
+            case ALL_ANSWERED:
+                return QuizState.FINISHED;
+            default:
+                return QuizState.INVALID;
         }
     }
 
-    private void shuffleQuestions() {
-        Collections.shuffle(questions);
-    }
 }
